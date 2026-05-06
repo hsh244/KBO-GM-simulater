@@ -1,0 +1,140 @@
+{
+  "season_loop": {
+    "start_date": "2026-01-01",
+    "type": "Infinite Loop",
+    "phases":[
+      {
+        "period": "January",
+        "phase_name": "Season Preparation",
+        "mandatory_checklist":[
+          "LANGUAGE & DISPLAY LOCALIZATION: 모든 출력 한국어 강제, 투/타 스탯 표기법 변경",
+          "SEASON PREVIEW + ROSTER INTEGRITY SCAN: 무결성 검사 후 프리뷰 출력",
+          "BROADCAST RIGHTS NEGOTIATION & ROOKIE DRAFT: 매년 필수 진행, 유저 직접 선택",
+          "SPRING CAMP: 매년 필수 진행, 유저가 장소 선택",
+          "LINEUP AUTO-STRUCTURE RULE: 타순 자동 구성 규칙(스피드-파워-수비 중심) 및 DH 로테이션 적용",
+          "WEEKLY DIFFICULTY EVENTS: 주 1회 난이도 조절용 랜덤 이벤트 발생",
+          "MONTHLY DEVELOPMENT PACKAGE + REPORT: 매월 1/2군 유망주 10명 성장 리포트 출력",
+          "MONTHLY COMMEMORATION EVENT: 특별 유니폼 등 팬 수익 창출 이벤트"
+        ],
+        "weekly_schedule": {
+          "week_1": {
+            "event": "Broadcaster Contract",
+            "options":[
+              {"name": "KBS", "terms": "40억 + 승리수당 0.8억"},
+              {"name": "MBC", "terms": "90억"},
+              {"name": "SBS", "terms": "60억 + PS진출시 50억"},
+              {"name": "SOOP", "terms": "0원 + 승리수당 1.5억"}
+            ],
+            "constraints": "기재된 조건 외의 우승 보너스 등 임의 생성 절대 금지 (Strict Logic)"
+          },
+          "week_2": {
+            "event": "Season Preview",
+            "details":[
+              "10개 구단 예상 순위 (4개 방송사 개별 평가)",
+              "주목할 선수 30명 (팀별 투/타 3명)",
+              "전년도 FA/트레이드 이적 총평",
+              "예비 FA 명단 및 예상 액수",
+              "신인 유망주 TOP 10 스카우팅 리포트"
+            ]
+          },
+          "week_3": {
+            "event": "Mercenaries (Foreign Players) Bidding",
+            "details": "투수 25명 / 타자 15명 리스트 생성 (전원 출력), 용병 샐러리캡 40억 한도 내 입찰"
+          },
+          "week_4": {
+            "event": "Tryouts",
+            "details": "전년도 방출자 + 가상 독립리그 선수 15명 리스트 생성 (에이징 커브 및 표본 부족 반영)"
+          }
+        }
+      },
+      {
+        "period": "February",
+        "phase_name": "Pre-Season",
+        "weekly_schedule": {
+          "week_1": {
+            "event": "Asian Quota",
+            "details": "20명 리스트 생성 (전원 출력), 아시아 쿼터 샐러리캡 2억 한도 내 입찰"
+          },
+          "week_2": {
+            "event": "Coaching Staff Contract",
+            "details": "감독/투수코치/타자코치 각 5명 가명 생성 (C~B 등급). 경기 결과에 20% 비중 반영"
+          },
+          "week_3": {
+            "event": "Spring Camp",
+            "details": "지역별 차등 비용(0.3억~8.0억). 스탯 부스트 효과 부여 (코칭 실패 시 하락 가능성 존재)"
+          }
+        }
+      },
+      {
+        "period": "March ~ September",
+        "phase_name": "Regular Season",
+        "details": {
+          "games": 144,
+          "format": "3-game series system",
+          "control": "유저가 1일/1주일/1개월/시즌종료 단위로 시뮬레이션 속도 결정",
+          "output": "매월 구단 순위 및 선수 세부 기록 상세 출력"
+        }
+      },
+      {
+        "period": "October",
+        "phase_name": "Postseason",
+        "details": {
+          "format": "Wild Card (4th vs 5th) -> Semi-PO -> PO -> Korean Series",
+          "prize_money": "우승 30억, 준우승 10억, 준PO 진출 5억 (배당금 없음)"
+        }
+      },
+      {
+        "period": "November ~ December",
+        "phase_name": "Off-Season (Stove League)",
+        "constraints": "각 단계를 반드시 순서대로 진행해야 하며, 한 번에 처리하는 것을 금지함.",
+        "mandatory_checklist":[
+          "SPECIAL POSTING / OVERSEAS NEGOTIATION: 해외 진출(MLB/NPB) 희망자 및 해외 영입 후보 논의",
+          "TRADE INQUIRIES ALERT: A등급 이하 유망주 대상 트레이드 제안 발생 시 즉시 보고",
+          "BROADCAST RIGHTS NEGOTIATION & ROOKIE DRAFT: 매년 필수 진행 (스킵 불가)",
+          "NEXT-SEASON PREVIEW + ROSTER INTEGRITY SCAN: 시즌 전 무결성 검증",
+          "VETERAN RETIREMENT / COACH TRANSITION: 30세 이상 베테랑 은퇴식/코치 연수 여부 질문",
+          "ANTI-DYNASTY LEAGUE ACTION: 디펜딩 챔피언 독주 견제를 위한 타 팀 성장 속도/시설 부스트 적용",
+          "AI-DRIVEN COUNTERMEASURES: 왕조 구축 방해를 위한 AI 연합 및 페널티 부여 허용",
+          "ANNUAL LEGEND BOOST: 매년 1월 1일, 우승팀을 제외한 9개 팀에 24세 가상의 특급 선수(Legend) 1명씩 무상 추가 지급",
+          "WEEKLY DIFFICULTY EVENTS: 비시즌에도 주간 난이도 조절 랜덤 이벤트 지속",
+          "CHAMPIONSHIP COUNT NUMBER EVENT: V1, V2 등 우승 횟수 연계 기념 이벤트"
+        ],
+        "schedule": {
+          "nov_week_2": {
+            "event": "Rookie Draft",
+            "details": "총 5라운드 진행"
+          },
+          "nov_week_3": {
+            "event": "Set Protected List",
+            "details": "20인/25인 보호선수 명단 설정",
+            "rules":[
+              "당해 연도 FA 자격 취득 선수는 자동 보호 (명단 슬롯 미차지)",
+              "당해 연도 영입 신인 선수는 자동 보호 (명단 슬롯 미차지)"
+            ]
+          },
+          "nov_week_4": {
+            "event": "FA Market Open & Compensation",
+            "details": "FA 시장 개장 및 보상 선수 지명"
+          },
+          "dec_week_1": {
+            "event": "Foreign Mercenary Contracts",
+            "details": "외국인 용병 계약 진행"
+          },
+          "dec_week_2": {
+            "event": "Finishing Camp",
+            "details": "마무리 캠프 (필수 진행)"
+          },
+          "dec_end": {
+            "event": "Salary Negotiations & Releases",
+            "details": "연봉 협상 및 방출 진행. 잔여 자금은 내년으로 100% 이월됨."
+          }
+        },
+        "end_of_year_protocol": {
+          "trigger": "12월 4주차(연말 정산) 일정이 모두 끝난 직후",
+          "action": "유저가 'Next Year'를 입력하면 [YYYY] Season & Stove League Complete. 메시지 출력 후 [SYSTEM: DATA INTEGRITY SAVE POINT] 세이브 데이터 자동 생성",
+          "constraint": "포스트시즌 직후 등 정해진 타이밍 이전에 세이브 패킷을 조기 생성하는 것을 엄격히 금지함."
+        }
+      }
+    ]
+  }
+}
