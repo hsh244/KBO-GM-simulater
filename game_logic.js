@@ -8,18 +8,23 @@
 /* =====================================================================[1. 전역 변수 및 상태 관리]
 ===================================================================== */
 const LMD_CAP_LIMIT = 137.0; 
+const LMD_MERC_CAP_LIMIT = 40.0;
 const INITIAL_CASH = 50.0;   
-const TEAM_NAMES =['KIA', '삼성', 'LG', '두산', 'KT', 'SSG', '롯데', '한화', 'NC', '키움'];
-
-const SEASON_EVENTS = {
+const TEAM_NAconst SEASON_EVENTS = {
     '01-01': { id: 'broadcast_contract', title: '방송사 계약', desc: '새해 첫 업무로 방송권 중계 계약을 체결해야 합니다.', requiresAction: true, navMain: 'schedule', navSubPrefix: 's', navSubId: 'sch-broadcast' },
     '01-08': { id: 'season_preview', title: '시즌 프리뷰', desc: '10개 구단 예상 순위 및 주목할 선수 리포트가 발간되었습니다.', requiresAction: true, navMain: 'schedule', navSubPrefix: 's', navSubId: 'sch-briefing' },
-    '01-15': { id: 'merc_bidding', title: '외국인 용병 입찰', desc: '용병 샐러리캡 40억 한도 내에서 외국인 선수를 입찰하세요.' },
+    '01-15': { id: 'merc_bidding', title: '외국인 용병 입찰', desc: '용병 샐러리캡 40억 한도 내에서 외국인 선수를 입찰하세요.', requiresAction: true, navMain: 'roster', navSubPrefix: 'r', navSubId: 'roster-merc' },
     '01-22': { id: 'tryouts', title: '트라이아웃', desc: '전년도 방출자 및 가상 독립리그 선수 트라이아웃이 시작되었습니다.' },
     '02-01': { id: 'asian_quota', title: '아시아 쿼터 선발', desc: '아시아 쿼터 샐러리캡 한도 내에서 선수를 영입하세요.' },
     '02-08': { id: 'coach_contract', title: '코칭스태프 계약', desc: '새로운 코칭스태프를 구성하고 계약을 체결하세요.' },
     '02-15': { id: 'spring_camp', title: '스프링캠프', desc: '스프링캠프 장소를 선택하고 훈련을 진행하세요.' },
     '11-08': { id: 'rookie_draft', title: '신인 드래프트', desc: '신인 유망주 5라운드 지명이 시작됩니다.' },
+    '11-15': { id: 'protected_list', title: '보호선수 명단 제출', desc: '20인/25인 보호선수 명단을 설정하여 제출하세요.' },
+    '11-22': { id: 'fa_market', title: 'FA 시장 개장', desc: 'FA 시장이 열렸습니다. 필요한 선수를 영입하세요.', requiresAction: true, navMain: 'roster', navSubPrefix: 'r', navSubId: 'roster-fa' },
+    '12-01': { id: 'merc_contract', title: '외국인 용병 최종 계약', desc: '내년 시즌을 함께할 외국인 용병과 최종 계약을 맺으세요.' },
+    '12-08': { id: 'finishing_camp', title: '마무리 캠프', desc: '시즌을 마무리하는 훈련을 진행하세요.' },
+    '12-25': { id: 'salary_nego', title: '연봉 협상 및 방출', desc: '기존 선수들과의 연봉 협상 및 잉여 전력 방출을 진행하세요.' }
+};유망주 5라운드 지명이 시작됩니다.' },
     '11-15': { id: 'protected_list', title: '보호선수 명단 제출', desc: '20인/25인 보호선수 명단을 설정하여 제출하세요.' },
     '11-22': { id: 'fa_market', title: 'FA 시장 개장', desc: 'FA 시장이 열렸습니다. 필요한 선수를 영입하세요.' },
     '12-01': { id: 'merc_contract', title: '외국인 용병 최종 계약', desc: '내년 시즌을 함께할 외국인 용병과 최종 계약을 맺으세요.' },
@@ -39,7 +44,9 @@ let gameState = {
     tradeCooldowns: {}, // AI 팀별 트레이드 쿨다운 날짜
     activeFABids: {},   // FA 진행 상태 저장
     completedEvents: {},
-    pendingEvent: null
+    pendingEvent: null,
+    faMarket: [],
+    mercMarket: []
 };
 
 let nameDB = null;
@@ -475,6 +482,10 @@ function advanceDays(days) {
             if (!gameState.completedEvents) gameState.completedEvents = {};
             if (!gameState.completedEvents[eventYearKey]) {
                 gameState.pendingEvent = eventConfig;
+
+                if (eventConfig.id === 'fa_market') generateFAMarket();
+                if (eventConfig.id === 'merc_bidding') generateMercMarket();
+
                 showEventModal(eventConfig);
                 updateUI();
                 saveGame();
@@ -656,9 +667,14 @@ function executeTraining() {
 
 function checkLuxuryTax() {
     const team = gameState.leagueData.teams[gameState.userTeam]; 
-    const payroll = calculateTeamPayroll(gameState.userTeam);
-    if (payroll > team.capLimit) {
-        const penalty = (payroll - team.capLimit) * 2.0; team.cash -= penalty;
+    const payroll = calculateTeamPayroll(gameState.userTeam, false);
+    const mercPayroll = calculateTeamPayroll(gameState.userTeam, true);
+    let penalty = 0;
+    if (payroll > LMD_CAP_LIMIT) penalty += (payroll - LMD_CAP_LIMIT) * 2.0;
+    if (mercPayroll > LMD_MERC_CAP_LIMIT) penalty += (mercPayroll - LMD_MERC_CAP_LIMIT) * 2.0;
+    
+    if (penalty > 0) {
+        team.cash -= penalty;
         addTransactionLog(`[사치세 징수] 초과로 ${penalty.toFixed(1)}억 차감.`); alert(`사치세가 부과되었습니다.\n차감액: ${penalty.toFixed(1)}억 원`);
         saveGame();
     } else { alert("정상 운영 중입니다."); }
@@ -725,73 +741,177 @@ function executeTrade(userPlayerIds, aiPlayerIds, aiTeamName) {
 
 /* =====================================================================[9. FA 시장 및 경매 / 보상 시스템]
 ===================================================================== */
+function generateFAMarket() {
+    if (gameState.faMarket && gameState.faMarket.length > 0) return; // 이미 생성됨
+    if (!gameState.faMarket) gameState.faMarket = [];
+    
+    let candidates = gameState.leagueData.players.filter(p => p.tier === 1 && p.age >= 28 && p.team && p.team !== 'FA' && !p.isMercenary);
+    // 무작위 추출
+    candidates.sort(() => 0.5 - Math.random());
+    let faPlayers = candidates.slice(0, Math.floor(Math.random() * 6) + 10); // 10~15명
+    
+    faPlayers.forEach(p => {
+        p.originalTeam = p.team; // 원소속팀 저장
+        p.team = 'FA'; // FA로 전환
+        gameState.faMarket.push(p.id);
+    });
+    addTransactionLog(`[FA 시장 개장] ${faPlayers.length}명의 선수가 FA 시장에 나왔습니다.`);
+}
+
+function generateMercMarket() {
+    if (gameState.mercMarket && gameState.mercMarket.length > 0) return; // 이미 생성됨
+    if (!gameState.mercMarket) gameState.mercMarket = [];
+    const reqBatters =['1B', '3B', 'LF', 'CF', 'RF'];
+    
+    for(let i=0; i<50; i++) {
+        const isPitcher = i < 25;
+        let pos = isPitcher ? 'SP' : reqBatters[Math.floor(Math.random()*reqBatters.length)];
+        let p = {
+            id: `merc-${new Date().getTime()}-${i}`, team: 'FA', name: generatePlayerName('USA/LATIN'), age: Math.floor(Math.random() * 8) + 24,
+            isPitcher: isPitcher, pos: pos, tier: 1, salary: 0,
+            gradeCurr: ['S', 'A', 'B'][Math.floor(Math.random()*3)],
+            hidden: { gradePot: ['S', 'A', 'B'][Math.floor(Math.random()*3)], adaptability: Math.floor(Math.random() * 100) },
+            seasonRecords: { G: 0, IP: 0, ER: 0, PA: 0, H: 0 },
+            stats: isPitcher ? { vel: Math.floor(Math.random()*20)+140, stf: Math.floor(Math.random()*50)+45, ctl: Math.floor(Math.random()*50)+45, sta: Math.floor(Math.random()*50)+45 } 
+                        : { con: Math.floor(Math.random()*50)+45, pow: Math.floor(Math.random()*50)+45, eye: Math.floor(Math.random()*50)+45, def: Math.floor(Math.random()*50)+45 },
+            isMercenary: true, nationality: 'USA/LATIN'
+        };
+        gameState.leagueData.players.push(p);
+        gameState.mercMarket.push(p.id);
+    }
+    addTransactionLog(`[용병 시장] 50명의 새로운 외국인 선수가 풀에 등록되었습니다.`);
+}
+
 function renderMarketList() {
     const faBody = document.getElementById('fa-list-body');
     const mercBody = document.getElementById('merc-list-body');
-    let randFA = generatePlayerName('KOR');
-    let randMerc = generatePlayerName('USA/LATIN');
     
-    // UI에 보이기 위한 임시 아이디 부여 (실제 엔진 구동용)
-    if(faBody) faBody.innerHTML = `<tr><td>${randFA}(30)</td><td>3B</td><td class="text-red">10.0억</td><td>B+</td><td><button class="btn-sm primary" onclick="processFABidding('temp_fa', 10.0, 4)">입찰</button></td></tr>`;
-    if(mercBody) mercBody.innerHTML = `<tr><td>${randMerc}</td><td>SP</td><td class="text-red">8.5억</td><td style="font-size:11px;">ERA 4.50</td><td><button class="btn-sm danger" onclick="signMercenary('temp_merc', 8.5)">계약</button></td></tr>`;
+    if(faBody) {
+        faBody.innerHTML = '';
+        if (!gameState.faMarket) gameState.faMarket = [];
+        let fas = gameState.leagueData.players.filter(p => gameState.faMarket.includes(p.id));
+        if (fas.length === 0) {
+            faBody.innerHTML = '<tr><td colspan="5" class="text-muted">FA 시장이 닫혀있거나 매물이 없습니다.</td></tr>';
+        } else {
+            fas.forEach(p => {
+                let overallGrade = getGradeFromStat(getPlayerOverallStat(p));
+                faBody.innerHTML += `<tr><td class="left">${p.name}(${p.age})</td><td>${p.pos}</td><td>${p.originalTeam}</td><td>${overallGrade}</td><td><button class="btn-sm primary" onclick="openFANegotiation('${p.id}')">협상</button></td></tr>`;
+            });
+        }
+    }
+
+    if(mercBody) {
+        mercBody.innerHTML = '';
+        if (!gameState.mercMarket) gameState.mercMarket = [];
+        let mercs = gameState.leagueData.players.filter(p => gameState.mercMarket.includes(p.id));
+        if (mercs.length === 0) {
+            mercBody.innerHTML = '<tr><td colspan="5" class="text-muted">용병 시장이 닫혀있거나 매물이 없습니다.</td></tr>';
+        } else {
+            mercs.forEach(p => {
+                let overallGrade = getGradeFromStat(getPlayerOverallStat(p));
+                mercBody.innerHTML += `<tr><td class="left">${p.name}(${p.age})</td><td>${p.pos}</td><td>${p.nationality}</td><td>${overallGrade}</td><td><button class="btn-sm danger" onclick="openMercNegotiation('${p.id}')">계약 제안</button></td></tr>`;
+            });
+        }
+    }
 }
 
-// 용병 즉시 계약
-function signMercenary(id, cost) {
-    const t = gameState.leagueData.teams[gameState.userTeam];
-    if (t.cash < cost) { alert("자금 부족!"); return; }
-    t.cash -= cost;
-    let adp = Math.floor(Math.random() * 100);
-    let msg = `[용병 영입] ${cost}억 차감\n적응도: ${adp}/100`;
-    if(adp < 30) msg += `\n->[최악] 적응 실패! (폭탄 당첨)`;
-    alert(msg); addTransactionLog(msg.replace(/\n/g, " ")); 
-    document.getElementById('merc-list-body').innerHTML = '<tr><td colspan="5">매진</td></tr>';
+function openFANegotiation(playerId) {
+    let p = gameState.leagueData.players.find(x => x.id === playerId);
+    if(!p) return;
+    
+    let bonus = parseFloat(prompt(`[${p.name} FA 협상]\n계약금(Signing Bonus)을 제시하세요. (단위: 억)\n현재 구단 자금: ${gameState.leagueData.teams[gameState.userTeam].cash.toFixed(1)}억`));
+    if(isNaN(bonus) || bonus < 0) return;
+    
+    let salary = parseFloat(prompt(`[${p.name} FA 협상]\n연봉(Annual Salary)을 제시하세요. (단위: 억)\n*샐러리캡에 반영됩니다.`));
+    if(isNaN(salary) || salary <= 0) return;
+
+    let defaultYears = 4;
+    let yearsInput = prompt(`[${p.name} FA 협상]\n계약 기간(Years)을 제시하세요. (기본 4년)`, defaultYears);
+    let years = parseInt(yearsInput);
+    if(isNaN(years) || years <= 0) years = defaultYears;
+
+    processFAOffer(playerId, bonus, salary, years);
+}
+
+function processFAOffer(playerId, bonus, salary, years) {
+    let p = gameState.leagueData.players.find(x => x.id === playerId);
+    let myTeam = gameState.leagueData.teams[gameState.userTeam];
+    
+    if (myTeam.cash < bonus) return alert("구단 현금이 부족하여 계약금을 지불할 수 없습니다.");
+    
+    let playerOverallScore = getPlayerOverallStat(p);
+    // 시장 가치: 능력치 * 나이 배율 등을 단순화하여 임시 적용
+    let ageMod = 1.0;
+    if (p.age >= 34) ageMod = 0.6;
+    else if (p.age >= 31) ageMod = 0.8;
+    else if (p.age <= 28) ageMod = 1.2;
+
+    let demandedTotal = (playerOverallScore * 0.4 * ageMod) * years;
+    let myTotalOffer = bonus + (salary * years);
+
+    if (myTotalOffer < demandedTotal) {
+        alert(`[FA 결렬] 에이전트: "제시하신 조건(총액 ${myTotalOffer.toFixed(1)}억)은 시장 평가액(${demandedTotal.toFixed(1)}억)에 크게 못 미칩니다."\n${p.name} 선수가 협상 테이블에서 일어났습니다.`);
+        // 실패 시 다른 AI 팀이 채가게 설정 (FA 마켓에서 삭제)
+        let rival = TEAM_NAMES.filter(t => t !== gameState.userTeam)[Math.floor(Math.random() * 9)];
+        p.team = rival;
+        p.salary = (demandedTotal / years) * 1.1; // AI는 약간 더 높은 연봉을 줌
+        gameState.faMarket = gameState.faMarket.filter(id => id !== playerId);
+        addTransactionLog(`[FA 이적] ${p.name} -> ${rival} (총액 ${(p.salary * years).toFixed(1)}억)`);
+        updateUI(); saveGame();
+        return;
+    }
+
+    // 계약 성공
+    myTeam.cash -= bonus;
+    p.salary = salary;
+    p.team = gameState.userTeam;
+    gameState.faMarket = gameState.faMarket.filter(id => id !== playerId);
+
+    alert(`[FA 영입 성공] ${p.name} 선수와 계약금 ${bonus}억, 연봉 ${salary}억, 기간 ${years}년에 계약을 체결했습니다!`);
+    addTransactionLog(`[FA 영입] ${p.name} 영입 (총액 ${myTotalOffer}억)`);
     updateUI(); saveGame();
 }
 
-// 턴제 FA 경매 시스템
-function processFABidding(playerId, userOfferAmount, userOfferYears) {
+function openMercNegotiation(playerId) {
+    let p = gameState.leagueData.players.find(x => x.id === playerId);
+    if(!p) return;
+    
+    let salary = parseFloat(prompt(`[외국인 용병 ${p.name} 협상]\n단년 계약 연봉을 제시하세요. (단위: 억)\n현재 외국인 샐러리캡 여유: ${(LMD_MERC_CAP_LIMIT - calculateTeamPayroll(gameState.userTeam, true)).toFixed(1)}억`));
+    if(isNaN(salary) || salary <= 0) return;
+
+    processMercOffer(playerId, salary);
+}
+
+function processMercOffer(playerId, salary) {
+    let p = gameState.leagueData.players.find(x => x.id === playerId);
     let myTeam = gameState.leagueData.teams[gameState.userTeam];
-    let marketValue = 10.0 * 1.5 * 4; // 가상의 시장 평가액 (60억)
+    
+    let playerOverallScore = getPlayerOverallStat(p);
+    let demandedSalary = playerOverallScore * 0.12;
 
-    if (userOfferAmount < marketValue * 0.8) {
-        let rival = TEAM_NAMES.filter(t => t !== gameState.userTeam)[Math.floor(Math.random() * 9)];
-        let msg = `[FA 결렬] 에이전트: "우리를 모욕하는군요."\n결과: 선수가 ${rival}와 계약했습니다.`;
-        alert(msg); addTransactionLog(msg.replace('\n', ' ')); 
-        document.getElementById('fa-list-body').innerHTML = '<tr><td colspan="5">매진</td></tr>';
-        updateUI(); saveGame(); return;
+    if (salary < demandedSalary) {
+        alert(`[용병 계약 결렬] 에이전트: "이 금액(${salary}억)으로는 KBO에 가지 않겠습니다. (최소 ${demandedSalary.toFixed(1)}억 요구)"`);
+        gameState.mercMarket = gameState.mercMarket.filter(id => id !== playerId);
+        updateUI(); saveGame();
+        return;
     }
 
-    let aiBidAmount = generateMessyNumber(userOfferAmount * (1.05 + Math.random() * 0.1), true);
-    let rivalTeam = TEAM_NAMES.filter(t => t !== gameState.userTeam)[Math.floor(Math.random() * 9)];
-    
-    let confirmBid = confirm(`[경매 경쟁 발생] ${rivalTeam}에서 총액 ${aiBidAmount}억을 제시했습니다!\n경쟁하시겠습니까?\n\n(확인: 추가 입찰 / 취소: 포기)`);
-    
-    if (!confirmBid) {
-        let msg = `[FA 영입 포기] 선수가 ${rivalTeam}으로 이적했습니다. (총액 ${aiBidAmount}억)`;
-        alert(msg); addTransactionLog(msg); 
-        document.getElementById('fa-list-body').innerHTML = '<tr><td colspan="5">매진</td></tr>';
-        updateUI(); saveGame(); return;
-    } else {
-        let newOffer = parseFloat(prompt(`새로운 총액을 입력하세요 (단위: 억, 현재 경쟁가: ${aiBidAmount}억)`));
-        if (!newOffer || newOffer <= aiBidAmount) {
-            alert(`경쟁 입찰에서 패배했습니다. 선수가 ${rivalTeam}으로 이적합니다.`);
-            document.getElementById('fa-list-body').innerHTML = '<tr><td colspan="5">매진</td></tr>';
-            updateUI(); saveGame(); return;
-        }
-        userOfferAmount = newOffer;
+    let currentMercCap = calculateTeamPayroll(gameState.userTeam, true);
+    if (currentMercCap + salary > LMD_MERC_CAP_LIMIT) {
+        return alert(`외국인 샐러리캡 초과! (현재: ${currentMercCap.toFixed(1)}억 + 영입 시 ${salary}억 > 한도 ${LMD_MERC_CAP_LIMIT}억)\n계약을 체결할 수 없습니다.`);
     }
 
-    if (myTeam.cash < userOfferAmount * 0.4) return alert("구단 현금이 부족하여 계약금을 지불할 수 없습니다.");
-    
-    myTeam.cash -= generateMessyNumber(userOfferAmount * 0.4, true); 
-    
-    let curseMsg = "";
-    if (userOfferAmount >= marketValue * 1.3) curseMsg = "\n[주의] 오버페이로 인해 '승자의 저주' 플래그가 발동되었습니다.";
+    // 계약 성공
+    p.salary = salary;
+    p.team = gameState.userTeam;
+    gameState.mercMarket = gameState.mercMarket.filter(id => id !== playerId);
 
-    alert(`[FA 영입 성공] 총액 ${userOfferAmount}억에 영입했습니다!${curseMsg}`);
-    addTransactionLog(`[FA 영입] S급 FA 영입 (총액 ${userOfferAmount}억)`);
-    document.getElementById('fa-list-body').innerHTML = '<tr><td colspan="5">매진</td></tr>';
+    let adp = Math.floor(Math.random() * 100);
+    let msg = `[용병 영입 성공] ${p.name} 선수와 연봉 ${salary}억에 단년 계약 체결!\n(적응도: ${adp}/100)`;
+    if(adp < 30) msg += `\n-> [주의] 한국 문화 적응에 어려움을 겪고 있습니다.`;
+
+    alert(msg);
+    addTransactionLog(`[용병 영입] ${p.name} (연봉 ${salary}억)`);
     updateUI(); saveGame();
 }
 
@@ -825,8 +945,8 @@ function executeFACompensation(selectedPlayerId, lostPlayerObj, aiTeamName) {
 /* =====================================================================
     [10. UI 렌더링 (안개 시스템 적용)]
 ===================================================================== */
-function calculateTeamPayroll(teamName) { 
-    return gameState.leagueData.players.filter(p => p.team === teamName && p.tier !== 'RELEASED').reduce((sum, p) => sum + p.salary, 0); 
+function calculateTeamPayroll(teamName, isMerc = false) { 
+    return gameState.leagueData.players.filter(p => p.team === teamName && p.tier !== 'RELEASED' && !!p.isMercenary === isMerc).reduce((sum, p) => sum + p.salary, 0); 
 }
 
 function updateUI() {
@@ -836,8 +956,10 @@ function updateUI() {
     const sortedTeams = Object.values(gameState.leagueData.teams).sort((a, b) => b.wins - a.wins);
     const myTeamIndex = sortedTeams.findIndex(t => t.name === gameState.userTeam);
     const myTeam = sortedTeams[myTeamIndex];
-    const myPayroll = calculateTeamPayroll(gameState.userTeam);
+    const myPayroll = calculateTeamPayroll(gameState.userTeam, false);
+    const myMercPayroll = calculateTeamPayroll(gameState.userTeam, true);
     const myCapRate = Math.round((myPayroll / LMD_CAP_LIMIT) * 100);
+    const myMercCapRate = Math.round((myMercPayroll / LMD_MERC_CAP_LIMIT) * 100);
     const myWinRate = myTeam.wins + myTeam.losses === 0 ? ".000" : (myTeam.wins / (myTeam.wins + myTeam.losses)).toFixed(3);
 
     document.getElementById('dash-rank').innerText = `${myTeamIndex + 1}위`;
@@ -855,6 +977,9 @@ function updateUI() {
     
     let elUiCap = document.getElementById('ui-cap');
     if (elUiCap) elUiCap.innerText = `${myPayroll.toFixed(1)}억 (${myCapRate}%)`;
+
+    let elUiMercCap = document.getElementById('ui-merc-cap');
+    if (elUiMercCap) elUiMercCap.innerText = `${myMercPayroll.toFixed(1)}억 (${myMercCapRate}%)`;
 
     const receiptBox = document.getElementById('finance-receipt-container');
     if(myTeam.financeLog && receiptBox) {

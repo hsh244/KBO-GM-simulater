@@ -221,8 +221,8 @@
                 </div>
 
                 <!-- [서브]: 시장 관련 -->
-                <div id="sub-roster-fa" class="sub-view"><div class="dash-card"><div class="card-header">국내 FA 스토브리그</div><div class="card-body"><div class="table-wrapper"><table id="fa-table"><thead><tr><th>이름(나이)</th><th>Pos</th><th>요구액</th><th>현재</th><th>액션</th></tr></thead><tbody id="fa-list-body"></tbody></table></div></div></div></div>
-                <div id="sub-roster-merc" class="sub-view"><div class="dash-card"><div class="card-header">외국인 용병 리스트</div><div class="card-body"><div class="table-wrapper"><table id="merc-table"><thead><tr><th>이름(국적)</th><th>Pos</th><th>요구액</th><th>성적</th><th>액션</th></tr></thead><tbody id="merc-list-body"></tbody></table></div></div></div></div>
+                <div id="sub-roster-fa" class="sub-view"><div class="dash-card"><div class="card-header">국내 FA 스토브리그</div><div class="card-body"><div class="table-wrapper"><table id="fa-table"><thead><tr><th>이름(나이)</th><th>Pos</th><th>원소속팀</th><th>평가등급</th><th>액션</th></tr></thead><tbody id="fa-list-body"></tbody></table></div></div></div></div>
+                <div id="sub-roster-merc" class="sub-view"><div class="dash-card"><div class="card-header">외국인 용병 리스트</div><div class="card-body"><div class="table-wrapper"><table id="merc-table"><thead><tr><th>이름(나이)</th><th>Pos</th><th>국적</th><th>평가등급</th><th>액션</th></tr></thead><tbody id="merc-list-body"></tbody></table></div></div></div></div>
                 <div id="sub-roster-release" class="sub-view"><div class="dash-card"><div class="card-header">방출자 대기 명단</div><div class="card-body"><div class="table-wrapper"><table id="release-table"><thead><tr><th>이름(나이)</th><th>Pos</th><th>상태</th></tr></thead><tbody id="release-list-body"></tbody></table></div></div></div></div>
                 <div id="sub-roster-trade" class="sub-view"><div class="dash-card"><div class="card-body" style="text-align:center; padding: 40px 10px; color:var(--text-muted);">시즌 중 트레이드 블록은 닫혀있습니다.</div></div></div>
             </div>
@@ -237,9 +237,13 @@
                             <span style="font-size: 13px; color: var(--text-muted);">보유 현금 (Cash)</span><br>
                             <strong style="font-size: 24px; color: var(--accent-green);" id="ui-cash">0.0억</strong>
                         </div>
-                        <div>
-                            <span style="font-size: 13px; color: var(--text-muted);">샐러리캡 소진액 (한도 137.0억)</span><br>
+                        <div style="margin-bottom: 15px;">
+                            <span style="font-size: 13px; color: var(--text-muted);">국내 샐러리캡 소진액 (한도 137.0억)</span><br>
                             <strong style="font-size: 24px; color: var(--accent-red);" id="ui-cap">0.0억</strong>
+                        </div>
+                        <div>
+                            <span style="font-size: 13px; color: var(--text-muted);">외국인 샐러리캡 소진액 (한도 40.0억)</span><br>
+                            <strong style="font-size: 24px; color: var(--accent-blue);" id="ui-merc-cap">0.0억</strong>
                         </div>
                     </div>
                 </div>
