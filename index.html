@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>KBO GM Simulator </title>
+    <title>KBO GM Simulator (Hardcore)</title>
     <style>
         /* =========================================
            CSS: Dark Mode & OOTP-like Hardcore UI
@@ -145,14 +145,14 @@
 </head>
 <body>
 
-    <!-- 1. 구단 선택 화면 -->
+    <!-- 구단 선택 화면 -->
     <div id="team-selection-screen">
         <h1 style="color:white; margin-bottom:5px; font-size: 24px;">KBO GM Simulator</h1>
         <p style="color:var(--text-muted); margin-bottom:30px; font-size:13px;">경영할 프랜차이즈를 선택하십시오.</p>
         <div class="team-grid" id="team-buttons"></div>
     </div>
 
-    <!-- 2. 게임 메인 UI -->
+    <!-- 메인 UI -->
     <div id="game-ui">
         <header>
             <div><strong>GM Simulator</strong></div>
@@ -160,6 +160,9 @@
         </header>
 
         <main>
+            <!-- 공통 필수 이벤트 액션 배너 -->
+            <div id="event-action-container"></div>
+
             <!-- 탭 1: 홈 -->
             <div id="view-home" class="view active">
                 <div class="dashboard-header">
@@ -195,6 +198,7 @@
             <div id="view-roster" class="view">
                 <div class="sub-nav">
                     <button class="sub-btn-r active" onclick="switchSubTab('r', 'roster-main')">로스터</button>
+                    <button class="sub-btn-r" onclick="switchSubTab('r', 'roster-coach')">코칭스태프</button>
                     <button class="sub-btn-r" onclick="switchSubTab('r', 'roster-fa')">FA 시장</button>
                     <button class="sub-btn-r" onclick="switchSubTab('r', 'roster-merc')">외국인 용병</button>
                     <button class="sub-btn-r" onclick="switchSubTab('r', 'roster-release')">방출자 명단</button>
@@ -220,6 +224,34 @@
                     </div>
                 </div>
 
+                <!-- [서브]: 코칭스태프 (추가됨) -->
+                <div id="sub-roster-coach" class="sub-view">
+                    <div class="dash-card" style="margin-bottom: 15px;">
+                        <div class="card-header">코칭스태프 관리</div>
+                        <div class="card-body">
+                            <p style="font-size:12px; color:var(--text-muted);">현재 구단을 이끌고 있는 코치진입니다. 경질 시 잔여 연봉은 보전되지 않습니다.</p>
+                            <div class="table-wrapper">
+                                <table id="coach-manage-table">
+                                    <thead><tr><th>보직</th><th>이름</th><th>능력</th><th>연봉</th><th>액션</th></tr></thead>
+                                    <tbody id="coach-manage-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="dash-card">
+                        <div class="card-header">코칭스태프 계약 (시장)</div>
+                        <div class="card-body">
+                            <p style="font-size:12px; color:var(--text-muted);">새로운 코치를 영입할 수 있습니다. 기존 코치가 있다면 먼저 경질해야 합니다.</p>
+                            <div class="table-wrapper">
+                                <table id="coach-market-table">
+                                    <thead><tr><th>보직</th><th>이름</th><th>능력</th><th>요구 연봉</th><th>액션</th></tr></thead>
+                                    <tbody id="coach-market-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- [서브]: 시장 관련 -->
                 <div id="sub-roster-fa" class="sub-view"><div class="dash-card"><div class="card-header">국내 FA 스토브리그</div><div class="card-body"><div class="table-wrapper"><table id="fa-table"><thead><tr><th>이름(나이)</th><th>Pos</th><th>원소속팀</th><th>평가등급</th><th>액션</th></tr></thead><tbody id="fa-list-body"></tbody></table></div></div></div></div>
                 <div id="sub-roster-merc" class="sub-view"><div class="dash-card"><div class="card-header">외국인 용병 리스트</div><div class="card-body"><div class="table-wrapper"><table id="merc-table"><thead><tr><th>이름(나이)</th><th>Pos</th><th>국적</th><th>평가등급</th><th>액션</th></tr></thead><tbody id="merc-list-body"></tbody></table></div></div></div></div>
@@ -238,11 +270,11 @@
                             <strong style="font-size: 24px; color: var(--accent-green);" id="ui-cash">0.0억</strong>
                         </div>
                         <div style="margin-bottom: 15px;">
-                            <span style="font-size: 13px; color: var(--text-muted);">국내 샐러리캡 소진액 (한도 137.0억)</span><br>
+                            <span style="font-size: 13px; color: var(--text-muted);">국내 샐러리캡 소진액 (한도 137.0억) <span style="color:var(--text-main)">- 국내 전용</span></span><br>
                             <strong style="font-size: 24px; color: var(--accent-red);" id="ui-cap">0.0억</strong>
                         </div>
                         <div>
-                            <span style="font-size: 13px; color: var(--text-muted);">외국인 샐러리캡 소진액 (한도 40.0억)</span><br>
+                            <span style="font-size: 13px; color: var(--text-muted);">외국인 용병 캡 (한도 40.0억) <span style="color:var(--text-main)">- 최대 3명</span></span><br>
                             <strong style="font-size: 24px; color: var(--accent-blue);" id="ui-merc-cap">0.0억</strong>
                         </div>
                     </div>
@@ -265,8 +297,8 @@
             <div id="view-schedule" class="view">
                 <div class="sub-nav">
                     <button class="sub-btn-s active" onclick="switchSubTab('s', 'sch-match')">경기 일정</button>
-                    <button class="sub-btn-s" onclick="switchSubTab('s', 'sch-training')">스프링캠프</button>
-                    <button class="sub-btn-s" onclick="switchSubTab('s', 'sch-briefing')">시즌 브리핑</button>
+                    <button class="sub-btn-s" onclick="switchSubTab('s', 'sch-training')">특별 훈련/캠프</button>
+                    <button class="sub-btn-s" onclick="switchSubTab('s', 'sch-briefing')">시즌 프리뷰</button>
                     <button class="sub-btn-s" onclick="switchSubTab('s', 'sch-broadcast')">방송국 계약</button>
                 </div>
 
@@ -275,25 +307,23 @@
                 </div>
 
                 <div id="sub-sch-training" class="sub-view">
+                    <h4 style="margin-top:0; color:var(--accent-blue);">스프링 캠프 (매년 2월)</h4>
+                    <div id="spring-camp-cards"></div>
+
+                    <h4 style="margin-top:30px; color:var(--accent-blue);">선수 특별 훈련 (비시즌 전용)</h4>
                     <div class="dash-card">
-                        <div class="card-header">🏕️ 스프링캠프 장소 선택</div>
                         <div class="card-body">
-                            <p style="font-size:12px; color:var(--text-muted); margin-top:0;">스프링캠프 장소에 따라 비용, 성장 확률, 부스트 수치가 달라집니다.<br><span class="text-red">주의: 일부 장소에서는 코칭 사고로 스탯이 하락할 수 있습니다.</span></p>
-                            <p style="font-size:11px; color:var(--accent-blue); margin-bottom:15px;">* 스프링캠프는 팀 전체 선수에게 적용됩니다.</p>
-                            <div id="spring-camp-cards">
-                                <div style="text-align:center; padding:30px; color:var(--text-muted);">현재 스프링캠프 진행 기간이 아닙니다.<br><span style="font-size:12px;">매년 2월 3주차에 스프링캠프가 시작됩니다.</span></div>
-                            </div>
+                            <p style="font-size:12px; color:var(--text-muted);">포텐셜에 따라 성공률이 다릅니다. <br><span class="text-red">비용 0.5억. 주의: 30% 확률로 부작용(스탯 하락) 발생.</span></p>
+                            <select id="train-player-select" class="btn" style="background:#111; text-align:left; border-color:#555; padding:10px; margin-bottom:15px;"></select>
+                            <button class="btn" style="background-color:#702020; border-color:var(--accent-red); color:white; font-weight:bold;" onclick="executeTraining()">훈련 강행 (위험 감수)</button>
                         </div>
                     </div>
                 </div>
 
                 <div id="sub-sch-briefing" class="sub-view">
-                    <div class="dash-card">
-                        <div class="card-header">📰 2026 시즌 전력 예상 프리뷰</div>
-                        <div class="card-body">
-                            <p style="font-size:13px; color:var(--text-muted); line-height:1.5; margin-top:0;">올 시즌 KBO 10개 구단의 전력 분석 리포트가 발간되었습니다. 4개 방송사 전문가의 예상 순위와 주목할 선수 리스트를 확인하세요.</p>
-                            <div id="season-preview-content" style="margin: 15px 0;"></div>
-                            <button class="btn primary" onclick="completeSeasonBriefing()">프리뷰 열람 완료 및 시즌 준비 속행</button>
+                    <div class="dash-card"><div class="card-header">2026 정규시즌 프리뷰 & 스카우팅 리포트</div>
+                        <div class="card-body" id="season-preview-content">
+                            <div style="text-align:center; color:var(--text-muted); padding:30px;">시즌 프리뷰 발간 기간이 아닙니다.</div>
                         </div>
                     </div>
                 </div>
