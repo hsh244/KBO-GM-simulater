@@ -350,11 +350,12 @@ function parseAndLoadExternalRoster(dataArray) {
         if(posStr === '2nd Team') posStr = isP ? 'RP' : 'LF';
 
         let mappedTeam = teamMap[p.team] || p.team;
+        let sal = p.tier === 1 ? (Math.random() * 5.0) + 1.0 : (Math.random() * 1.5) + 0.3;
 
         let player = {
             id: `${mappedTeam}-${idx}`, team: mappedTeam, name: p.name, age: p.age,
             isPitcher: isP, pos: posStr, tier: p.tier, 
-            salary: Math.floor(Math.random() * 10) + 0.5,
+            salary: parseFloat(sal.toFixed(1)),
             gradeCurr: ['S', 'A', 'B', 'C', 'D'][Math.floor(Math.random()*5)],
             hidden: { gradePot: ['S', 'A', 'B', 'C'][Math.floor(Math.random()*4)], adaptability: Math.floor(Math.random() * 100) },
             seasonRecords: { G: 0, IP: 0, ER: 0, PA: 0, H: 0 },
@@ -385,9 +386,11 @@ function generateFallbackRoster() {
                 t1B++;
             }
 
+            let sal = tier === 1 ? (Math.random() * 5.0) + 1.0 : (Math.random() * 1.5) + 0.3;
+
             gameState.leagueData.players.push({
                 id: `${team}-${i}`, team: team, name: generatePlayerName('KOR'), age: Math.floor(Math.random() * 18) + 19,
-                isPitcher: isPitcher, pos: pos, tier: tier, salary: Math.floor(Math.random() * 10) + 0.5,
+                isPitcher: isPitcher, pos: pos, tier: tier, salary: parseFloat(sal.toFixed(1)),
                 gradeCurr: ['S', 'A', 'B', 'C', 'D'][Math.floor(Math.random()*5)],
                 hidden: { gradePot: ['S', 'A', 'B', 'C'][Math.floor(Math.random()*4)], adaptability: Math.floor(Math.random() * 100) },
                 seasonRecords: { G: 0, IP: 0, ER: 0, PA: 0, H: 0 },
