@@ -729,11 +729,17 @@ function updateUI() {
     document.getElementById('dash-record').innerText = `${myTeam.wins}W - ${myTeam.losses}L`;
     document.getElementById('dash-winrate').innerText = myWinRate.replace('0.', '.');
     document.getElementById('dash-streak').innerText = myTeam.streak === 0 ? "-" : (myTeam.streak > 0 ? `${myTeam.streak}연승` : `${Math.abs(myTeam.streak)}연패`);
-    document.getElementById('dash-cash').innerText = `${myTeam.cash.toFixed(1)}억`;
-    document.getElementById('dash-caprate').innerText = `${myCapRate}%`;
+    let elDashCash = document.getElementById('dash-cash');
+    if (elDashCash) elDashCash.innerText = `${myTeam.cash.toFixed(1)}억`;
+    
+    let elDashCapRate = document.getElementById('dash-caprate');
+    if (elDashCapRate) elDashCapRate.innerText = `${myCapRate}%`;
 
-    document.getElementById('ui-cash').innerText = `${myTeam.cash.toFixed(1)}억 원`;
-    document.getElementById('ui-cap').innerText = `${myPayroll.toFixed(1)}억 (${myCapRate}%)`;
+    let elUiCash = document.getElementById('ui-cash');
+    if (elUiCash) elUiCash.innerText = `${myTeam.cash.toFixed(1)}억 원`;
+    
+    let elUiCap = document.getElementById('ui-cap');
+    if (elUiCap) elUiCap.innerText = `${myPayroll.toFixed(1)}억 (${myCapRate}%)`;
 
     const receiptBox = document.getElementById('finance-receipt-container');
     if(myTeam.financeLog && receiptBox) {
