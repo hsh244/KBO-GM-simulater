@@ -11,6 +11,22 @@ const LMD_CAP_LIMIT = 137.0;
 const INITIAL_CASH = 50.0;   
 const TEAM_NAMES =['KIA', '삼성', 'LG', '두산', 'KT', 'SSG', '롯데', '한화', 'NC', '키움'];
 
+const SEASON_EVENTS = {
+    '01-01': { id: 'broadcast_contract', title: '방송사 계약', desc: '새해 첫 업무로 방송권 중계 계약을 체결해야 합니다.' },
+    '01-08': { id: 'season_preview', title: '시즌 프리뷰', desc: '10개 구단 예상 순위 및 주목할 선수 리포트가 발간되었습니다.' },
+    '01-15': { id: 'merc_bidding', title: '외국인 용병 입찰', desc: '용병 샐러리캡 40억 한도 내에서 외국인 선수를 입찰하세요.' },
+    '01-22': { id: 'tryouts', title: '트라이아웃', desc: '전년도 방출자 및 가상 독립리그 선수 트라이아웃이 시작되었습니다.' },
+    '02-01': { id: 'asian_quota', title: '아시아 쿼터 선발', desc: '아시아 쿼터 샐러리캡 한도 내에서 선수를 영입하세요.' },
+    '02-08': { id: 'coach_contract', title: '코칭스태프 계약', desc: '새로운 코칭스태프를 구성하고 계약을 체결하세요.' },
+    '02-15': { id: 'spring_camp', title: '스프링캠프', desc: '스프링캠프 장소를 선택하고 훈련을 진행하세요.' },
+    '11-08': { id: 'rookie_draft', title: '신인 드래프트', desc: '신인 유망주 5라운드 지명이 시작됩니다.' },
+    '11-15': { id: 'protected_list', title: '보호선수 명단 제출', desc: '20인/25인 보호선수 명단을 설정하여 제출하세요.' },
+    '11-22': { id: 'fa_market', title: 'FA 시장 개장', desc: 'FA 시장이 열렸습니다. 필요한 선수를 영입하세요.' },
+    '12-01': { id: 'merc_contract', title: '외국인 용병 최종 계약', desc: '내년 시즌을 함께할 외국인 용병과 최종 계약을 맺으세요.' },
+    '12-08': { id: 'finishing_camp', title: '마무리 캠프', desc: '시즌을 마무리하는 훈련을 진행하세요.' },
+    '12-25': { id: 'salary_nego', title: '연봉 협상 및 방출', desc: '기존 선수들과의 연봉 협상 및 잉여 전력 방출을 진행하세요.' }
+};
+
 let gameState = {
     currentDate: '2026-01-01', 
     userTeam: '',
@@ -21,7 +37,9 @@ let gameState = {
     transactionLog: [], 
     matchLogs:[],
     tradeCooldowns: {}, // AI 팀별 트레이드 쿨다운 날짜
-    activeFABids: {}    // FA 진행 상태 저장
+    activeFABids: {},   // FA 진행 상태 저장
+    completedEvents: {},
+    pendingEvent: null
 };
 
 let nameDB = null;
@@ -274,6 +292,8 @@ async function startGame(selectedTeam) {
 async function initGame() {
     gameState.tradeCooldowns = {};
     gameState.activeFABids = {};
+    gameState.completedEvents = {};
+    gameState.pendingEvent = null;
 
     TEAM_NAMES.forEach(name => {
         gameState.leagueData.teams[name] = { 
@@ -283,11 +303,23 @@ async function initGame() {
     });
 
     try {
+        const flowRes = await fetch('./season_flow.json');
+        if (!flowRes.ok) throw new Error("HTTP error " + flowRes.status);
+        const flowData = await flowRes.json();
+        console.log("[LMD] season_flow.json 로드 완료.");
+    } catch (error) {
+        console.warn("[SYSTEM] season_flow.json 로드 실패.", error);
+        alert("[경고] season_flow.json 파일을 불러오지 못했습니다.\nGitHub 저장소에 파일이 정상적으로 업로드되었는지 확인해주세요.");
+    }
+
+    try {
         const rosterRes = await fetch('./roster.json');
+        if (!rosterRes.ok) throw new Error("HTTP error " + rosterRes.status);
         const rosterData = await rosterRes.json();
         parseAndLoadExternalRoster(rosterData);
     } catch (error) {
-        console.warn("[SYSTEM] roster.json 로드 실패. 자체 엔진을 가동합니다.");
+        console.warn("[SYSTEM] roster.json 로드 실패. 자체 엔진을 가동합니다.", error);
+        alert("[경고] roster.json 파일을 불러오지 못해 임시(가상) 로스터가 생성되었습니다.\nGitHub 저장소 파일 상태(대소문자, 업로드 여부)를 점검해주세요.");
         generateFallbackRoster();
     }
 
@@ -365,31 +397,78 @@ function generateFallbackRoster() {
 
 /* =====================================================================[6. 시뮬레이션 엔진 및 에이징 커브]
 ===================================================================== */
+function resolvePendingEvent() {
+    if (!gameState.pendingEvent) return;
+    let currentYear = new Date(gameState.currentDate).getFullYear();
+    let eventYearKey = `${currentYear}-${gameState.pendingEvent.id}`;
+    
+    gameState.completedEvents[eventYearKey] = true;
+    addTransactionLog(`[일정 완료] ${gameState.pendingEvent.title}`);
+    gameState.pendingEvent = null;
+    closeModal();
+    updateUI();
+    saveGame();
+}
+
+function showEventModal(eventConfig) {
+    showModal("⚠️ 필수 시즌 일정 발생", `
+        <div style="text-align:center; padding: 20px;">
+            <h3 style="color:var(--accent-blue);">${eventConfig.title}</h3>
+            <p>${eventConfig.desc}</p>
+            <p style="font-size:13px; color:var(--accent-red); margin:20px 0;">이 일정을 완료해야만 다음 날짜로 시뮬레이션할 수 있습니다.</p>
+            <button class="btn primary" onclick="resolvePendingEvent()">일정 확인 및 완료</button>
+        </div>
+    `);
+}
+
 function advanceDays(days) {
+    if (gameState.pendingEvent) {
+        showEventModal(gameState.pendingEvent);
+        return;
+    }
+
     for(let d=0; d<days; d++) {
         let currentDateObj = new Date(gameState.currentDate);
+        let monthStr = String(currentDateObj.getMonth() + 1).padStart(2, '0');
+        let dayStr = String(currentDateObj.getDate()).padStart(2, '0');
+        let dateKey = `${monthStr}-${dayStr}`;
+        
+        let eventConfig = SEASON_EVENTS[dateKey];
+        if (eventConfig) {
+            let eventYearKey = `${currentDateObj.getFullYear()}-${eventConfig.id}`;
+            if (!gameState.completedEvents) gameState.completedEvents = {};
+            if (!gameState.completedEvents[eventYearKey]) {
+                gameState.pendingEvent = eventConfig;
+                showEventModal(eventConfig);
+                updateUI();
+                saveGame();
+                return; // 필수 이벤트 발생 시 락(Lock)을 걸고 시뮬레이션 중단
+            }
+        }
+
         let oldMonth = currentDateObj.getMonth();
         let oldYear = currentDateObj.getFullYear();
         
         currentDateObj.setDate(currentDateObj.getDate() + 1);
         gameState.currentDate = currentDateObj.toISOString().split('T')[0];
         
-        // 월간 재정 결산
         if (currentDateObj.getMonth() !== oldMonth) calculateMonthlyFinance(oldMonth, oldYear);
-        // 연간 에이징 커브 결산
         if (currentDateObj.getFullYear() !== oldYear) executeYearlyTransition(currentDateObj.getFullYear());
 
-        const shuffled = [...TEAM_NAMES].sort(() => 0.5 - Math.random());
-        const dailyResults =[];
-
-        for(let i=0; i<5; i++) {
-            dailyResults.push(simulateMatch(shuffled[i*2], shuffled[i*2+1]));
+        let currentMonth = currentDateObj.getMonth();
+        // 정규 시즌(3월~9월)에만 무작위 시뮬레이션 경기 진행
+        if (currentMonth >= 2 && currentMonth <= 8) {
+            const shuffled = [...TEAM_NAMES].sort(() => 0.5 - Math.random());
+            const dailyResults =[];
+            for(let i=0; i<5; i++) {
+                dailyResults.push(simulateMatch(shuffled[i*2], shuffled[i*2+1]));
+            }
+            gameState.matchLogs.unshift({ date: gameState.currentDate, matches: dailyResults });
+            if(gameState.matchLogs.length > 50) gameState.matchLogs.pop();
         }
-        gameState.matchLogs.unshift({ date: gameState.currentDate, matches: dailyResults });
-        if(gameState.matchLogs.length > 50) gameState.matchLogs.pop();
     }
 
-    addTransactionLog(`${days}일간의 리그 일정을 시뮬레이션 했습니다.`); 
+    addTransactionLog(`${days}일간의 일정을 진행했습니다.`); 
     updateUI(); saveGame();
 }
 
