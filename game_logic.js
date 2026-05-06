@@ -10,7 +10,9 @@
 const LMD_CAP_LIMIT = 137.0; 
 const LMD_MERC_CAP_LIMIT = 40.0;
 const INITIAL_CASH = 50.0;   
-const TEAM_NAconst SEASON_EVENTS = {
+const TEAM_NAMES =['KIA', '삼성', 'LG', '두산', 'KT', 'SSG', '롯데', '한화', 'NC', '키움'];
+
+const SEASON_EVENTS = {
     '01-01': { id: 'broadcast_contract', title: '방송사 계약', desc: '새해 첫 업무로 방송권 중계 계약을 체결해야 합니다.', requiresAction: true, navMain: 'schedule', navSubPrefix: 's', navSubId: 'sch-broadcast' },
     '01-08': { id: 'season_preview', title: '시즌 프리뷰', desc: '10개 구단 예상 순위 및 주목할 선수 리포트가 발간되었습니다.', requiresAction: true, navMain: 'schedule', navSubPrefix: 's', navSubId: 'sch-briefing' },
     '01-15': { id: 'merc_bidding', title: '외국인 용병 입찰', desc: '용병 샐러리캡 40억 한도 내에서 외국인 선수를 입찰하세요.', requiresAction: true, navMain: 'roster', navSubPrefix: 'r', navSubId: 'roster-merc' },
