@@ -262,6 +262,8 @@
                 <div class="sub-nav">
                     <button class="sub-btn-s active" onclick="switchSubTab('s', 'sch-match')">경기 일정</button>
                     <button class="sub-btn-s" onclick="switchSubTab('s', 'sch-training')">특별 훈련 (Driveline)</button>
+                    <button class="sub-btn-s" onclick="switchSubTab('s', 'sch-briefing')">시즌 브리핑</button>
+                    <button class="sub-btn-s" onclick="switchSubTab('s', 'sch-broadcast')">방송국 계약</button>
                 </div>
 
                 <div id="sub-sch-match" class="sub-view active">
@@ -275,6 +277,42 @@
                             <p style="font-size:12px; color:var(--text-muted);">포텐셜에 따라 성공률이 다릅니다. <br><span class="text-red">주의: 30% 확률로 부작용(스탯 하락) 발생.</span></p>
                             <select id="train-player-select" class="btn" style="background:#111; text-align:left; border-color:#555; padding:10px; margin-bottom:15px;"></select>
                             <button class="btn" style="background-color:#702020; border-color:var(--accent-red); color:white; font-weight:bold;" onclick="executeTraining()">훈련 강행 (위험 감수)</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="sub-sch-briefing" class="sub-view">
+                    <div class="dash-card">
+                        <div class="card-header">시즌 전력 예상 프리뷰</div>
+                        <div class="card-body">
+                            <p style="font-size:13px; color:var(--text-muted); line-height:1.5; margin-top:0;">올 시즌 KBO 10개 구단의 전력 분석 리포트가 발간되었습니다. 전문가들은 올해도 디펜딩 챔피언의 강세를 예상하는 가운데, 중위권 팀들의 치열한 다툼이 일어날 것으로 내다봤습니다.</p>
+                            <p style="font-size:13px; color:var(--accent-blue); margin-bottom: 20px;">* 각 구단의 주요 유망주와 전력 보강 상태를 확인하시기 바랍니다.</p>
+                            <button class="btn primary" onclick="completeSeasonBriefing()">프리뷰 열람 완료 및 시즌 준비 속행</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="sub-sch-broadcast" class="sub-view">
+                    <div class="dash-card">
+                        <div class="card-header">TV 중계권 방송사 입찰</div>
+                        <div class="card-body">
+                            <p style="font-size:13px; color:var(--text-muted); margin-bottom: 15px; margin-top:0;">올해 구단의 모든 경기를 독점 중계할 미디어 파트너를 선택하십시오. 계약 규모에 따라 즉시 현금(Cash)이 지급됩니다.</p>
+                            <button class="btn" style="text-align:left; margin-bottom:8px; border-color:var(--accent-blue);" onclick="signBroadcastContract(40, 'KBS')">
+                                <strong style="color:white; font-size:15px;">KBS (한국방송공사)</strong><br>
+                                <span style="font-size:12px; color:var(--text-muted);">기본 계약금 40.0억 (안정적 보장)</span>
+                            </button>
+                            <button class="btn" style="text-align:left; margin-bottom:8px; border-color:var(--accent-blue);" onclick="signBroadcastContract(90, 'MBC')">
+                                <strong style="color:white; font-size:15px;">MBC (문화방송)</strong><br>
+                                <span style="font-size:12px; color:var(--text-muted);">기본 계약금 90.0억 (최고액 베팅)</span>
+                            </button>
+                            <button class="btn" style="text-align:left; margin-bottom:8px; border-color:var(--accent-blue);" onclick="signBroadcastContract(60, 'SBS')">
+                                <strong style="color:white; font-size:15px;">SBS (에스비에스)</strong><br>
+                                <span style="font-size:12px; color:var(--text-muted);">기본 계약금 60.0억 + 성적 옵션</span>
+                            </button>
+                            <button class="btn" style="text-align:left; border-color:var(--accent-blue);" onclick="signBroadcastContract(0, 'SOOP')">
+                                <strong style="color:white; font-size:15px;">SOOP (인터넷 스트리밍)</strong><br>
+                                <span style="font-size:12px; color:var(--text-muted);">기본 계약금 0원 + 승리 시 막대한 후원금 (하이리스크)</span>
+                            </button>
                         </div>
                     </div>
                 </div>

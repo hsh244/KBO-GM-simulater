@@ -12,8 +12,8 @@ const INITIAL_CASH = 50.0;
 const TEAM_NAMES =['KIA', '삼성', 'LG', '두산', 'KT', 'SSG', '롯데', '한화', 'NC', '키움'];
 
 const SEASON_EVENTS = {
-    '01-01': { id: 'broadcast_contract', title: '방송사 계약', desc: '새해 첫 업무로 방송권 중계 계약을 체결해야 합니다.' },
-    '01-08': { id: 'season_preview', title: '시즌 프리뷰', desc: '10개 구단 예상 순위 및 주목할 선수 리포트가 발간되었습니다.' },
+    '01-01': { id: 'broadcast_contract', title: '방송사 계약', desc: '새해 첫 업무로 방송권 중계 계약을 체결해야 합니다.', requiresAction: true, navMain: 'schedule', navSubPrefix: 's', navSubId: 'sch-broadcast' },
+    '01-08': { id: 'season_preview', title: '시즌 프리뷰', desc: '10개 구단 예상 순위 및 주목할 선수 리포트가 발간되었습니다.', requiresAction: true, navMain: 'schedule', navSubPrefix: 's', navSubId: 'sch-briefing' },
     '01-15': { id: 'merc_bidding', title: '외국인 용병 입찰', desc: '용병 샐러리캡 40억 한도 내에서 외국인 선수를 입찰하세요.' },
     '01-22': { id: 'tryouts', title: '트라이아웃', desc: '전년도 방출자 및 가상 독립리그 선수 트라이아웃이 시작되었습니다.' },
     '02-01': { id: 'asian_quota', title: '아시아 쿼터 선발', desc: '아시아 쿼터 샐러리캡 한도 내에서 선수를 영입하세요.' },
@@ -410,13 +410,49 @@ function resolvePendingEvent() {
     saveGame();
 }
 
+function forceNavigateToEvent(mainTab, subTabPrefix, subTabId) {
+    closeModal();
+    document.querySelector(`button[onclick="switchTab('${mainTab}')"]`).click();
+    setTimeout(() => {
+        let subBtn = document.querySelector(`button[onclick="switchSubTab('${subTabPrefix}', '${subTabId}')"]`);
+        if(subBtn) subBtn.click();
+    }, 50);
+}
+
+function signBroadcastContract(amount, broadcaster) {
+    if (gameState.pendingEvent && gameState.pendingEvent.id === 'broadcast_contract') {
+        const myTeam = gameState.leagueData.teams[gameState.userTeam];
+        myTeam.cash += amount;
+        addTransactionLog(`[계약] ${broadcaster}와 ${amount}억 원에 중계권 계약을 체결했습니다.`);
+        alert(`${broadcaster}와 성공적으로 계약했습니다!\n구단 자금에 ${amount}억 원이 입금되었습니다.`);
+        resolvePendingEvent();
+    } else {
+        alert("현재 방송사 계약 진행 기간이 아닙니다.");
+    }
+}
+
+function completeSeasonBriefing() {
+    if (gameState.pendingEvent && gameState.pendingEvent.id === 'season_preview') {
+        alert("시즌 브리핑 열람을 완료했습니다. 이제 다음 날짜로 넘어갈 수 있습니다.");
+        resolvePendingEvent();
+    } else {
+        alert("현재 시즌 프리뷰 열람 기간이 아닙니다.");
+    }
+}
+
 function showEventModal(eventConfig) {
+    let buttonHtml = `<button class="btn primary" onclick="resolvePendingEvent()">일정 확인 및 완료</button>`;
+    
+    if (eventConfig.requiresAction) {
+        buttonHtml = `<button class="btn" style="background-color:var(--accent-blue); color:white; font-weight:bold; border:none;" onclick="forceNavigateToEvent('${eventConfig.navMain}', '${eventConfig.navSubPrefix}', '${eventConfig.navSubId}')">해당 탭으로 이동하여 완료하기 ➔</button>`;
+    }
+
     showModal("⚠️ 필수 시즌 일정 발생", `
         <div style="text-align:center; padding: 20px;">
             <h3 style="color:var(--accent-blue);">${eventConfig.title}</h3>
             <p>${eventConfig.desc}</p>
             <p style="font-size:13px; color:var(--accent-red); margin:20px 0;">이 일정을 완료해야만 다음 날짜로 시뮬레이션할 수 있습니다.</p>
-            <button class="btn primary" onclick="resolvePendingEvent()">일정 확인 및 완료</button>
+            ${buttonHtml}
         </div>
     `);
 }
