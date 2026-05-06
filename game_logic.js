@@ -26,12 +26,6 @@ const SEASON_EVENTS = {
     '12-01': { id: 'merc_contract', title: '외국인 용병 최종 계약', desc: '내년 시즌을 함께할 외국인 용병과 최종 계약을 맺으세요.' },
     '12-08': { id: 'finishing_camp', title: '마무리 캠프', desc: '시즌을 마무리하는 훈련을 진행하세요.' },
     '12-25': { id: 'salary_nego', title: '연봉 협상 및 방출', desc: '기존 선수들과의 연봉 협상 및 잉여 전력 방출을 진행하세요.' }
-};유망주 5라운드 지명이 시작됩니다.' },
-    '11-15': { id: 'protected_list', title: '보호선수 명단 제출', desc: '20인/25인 보호선수 명단을 설정하여 제출하세요.' },
-    '11-22': { id: 'fa_market', title: 'FA 시장 개장', desc: 'FA 시장이 열렸습니다. 필요한 선수를 영입하세요.' },
-    '12-01': { id: 'merc_contract', title: '외국인 용병 최종 계약', desc: '내년 시즌을 함께할 외국인 용병과 최종 계약을 맺으세요.' },
-    '12-08': { id: 'finishing_camp', title: '마무리 캠프', desc: '시즌을 마무리하는 훈련을 진행하세요.' },
-    '12-25': { id: 'salary_nego', title: '연봉 협상 및 방출', desc: '기존 선수들과의 연봉 협상 및 잉여 전력 방출을 진행하세요.' }
 };
 
 let gameState = {
