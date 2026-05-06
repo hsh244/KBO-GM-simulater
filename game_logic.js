@@ -315,15 +315,33 @@ async function initGame() {
         alert("[경고] season_flow.json 파일을 불러오지 못했습니다.\nGitHub 저장소에 파일이 정상적으로 업로드되었는지 확인해주세요.");
     }
 
+    // 로스터 로딩: 내장 데이터 우선 → fetch 시도 → 폴백 생성
+    let rosterLoaded = false;
+    
     try {
-        const rosterRes = await fetch('./roster.json');
-        if (!rosterRes.ok) throw new Error("HTTP error " + rosterRes.status);
-        const rosterData = await rosterRes.json();
-        parseAndLoadExternalRoster(rosterData);
-    } catch (error) {
-        console.warn("[SYSTEM] roster.json 로드 실패. 자체 엔진을 가동합니다.", error);
-        alert("[경고] roster.json 파일을 불러오지 못해 임시(가상) 로스터가 생성되었습니다.\nGitHub 저장소 파일 상태(대소문자, 업로드 여부)를 점검해주세요.");
-        generateFallbackRoster();
+        if (typeof EMBEDDED_ROSTER_DATA !== 'undefined' && Array.isArray(EMBEDDED_ROSTER_DATA) && EMBEDDED_ROSTER_DATA.length > 0) {
+            parseAndLoadExternalRoster(EMBEDDED_ROSTER_DATA);
+            console.log("[LMD] 내장 로스터 데이터 로드 완료. (" + EMBEDDED_ROSTER_DATA.length + "명)");
+            rosterLoaded = true;
+        }
+    } catch(e) { console.warn("[SYSTEM] 내장 로스터 파싱 실패:", e); }
+    
+    if (!rosterLoaded) {
+        try {
+            const rosterRes = await fetch('./roster.json');
+            if (!rosterRes.ok) throw new Error("HTTP error " + rosterRes.status);
+            let rosterText = await rosterRes.text();
+            // BOM 제거 및 공백 정리
+            rosterText = rosterText.replace(/^\uFEFF/, '').trim();
+            const rosterData = JSON.parse(rosterText);
+            parseAndLoadExternalRoster(rosterData);
+            console.log("[LMD] roster.json fetch 로드 완료.");
+            rosterLoaded = true;
+        } catch (error) {
+            console.warn("[SYSTEM] roster.json 로드 실패. 자체 엔진을 가동합니다.", error);
+            alert("[경고] roster.json 파일을 불러오지 못해 임시(가상) 로스터가 생성되었습니다.\nGitHub 저장소 파일 상태(대소문자, 업로드 여부)를 점검해주세요.");
+            generateFallbackRoster();
+        }
     }
 
     addTransactionLog(`[취임] ${gameState.userTeam} 신임 단장 부임. 2026 시즌 준비 완료.`);
