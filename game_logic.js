@@ -19,7 +19,7 @@ const SEASON_EVENTS = {
     '01-22': { id: 'tryouts', title: '트라이아웃', desc: '전년도 방출자 및 가상 독립리그 선수 트라이아웃이 시작되었습니다.' },
     '02-01': { id: 'asian_quota', title: '아시아 쿼터 선발', desc: '아시아 쿼터 샐러리캡 한도 내에서 선수를 영입하세요.' },
     '02-08': { id: 'coach_contract', title: '코칭스태프 계약', desc: '새로운 코칭스태프를 구성하고 계약을 체결하세요.' },
-    '02-15': { id: 'spring_camp', title: '스프링캠프', desc: '스프링캠프 장소를 선택하고 훈련을 진행하세요.' },
+    '02-15': { id: 'spring_camp', title: '스프링캠프', desc: '스프링캠프 장소를 선택하고 훈련을 진행하세요.', requiresAction: true, navMain: 'schedule', navSubPrefix: 's', navSubId: 'sch-training' },
     '11-08': { id: 'rookie_draft', title: '신인 드래프트', desc: '신인 유망주 5라운드 지명이 시작됩니다.' },
     '11-15': { id: 'protected_list', title: '보호선수 명단 제출', desc: '20인/25인 보호선수 명단을 설정하여 제출하세요.' },
     '11-22': { id: 'fa_market', title: 'FA 시장 개장', desc: 'FA 시장이 열렸습니다. 필요한 선수를 영입하세요.', requiresAction: true, navMain: 'roster', navSubPrefix: 'r', navSubId: 'roster-fa' },
@@ -446,6 +446,117 @@ function completeSeasonBriefing() {
     }
 }
 
+function generateSeasonPreview() {
+    const container = document.getElementById('season-preview-content');
+    if (!container) return;
+
+    const teams = Object.values(gameState.leagueData.teams);
+    const players = gameState.leagueData.players.filter(p => p.tier !== 'RELEASED');
+
+    // 1. 4개 방송사별 예상 순위 생성
+    const broadcasters = ['KBS', 'MBC', 'SBS', 'SOOP'];
+    let rankingsHtml = '<div style="margin-bottom:25px;"><h4 style="color:var(--accent-blue); margin:0 0 12px 0;">📊 2026 시즌 예상 순위</h4>';
+    rankingsHtml += '<div class="table-wrapper"><table style="min-width:400px;"><thead><tr><th>순위</th>';
+    broadcasters.forEach(b => rankingsHtml += `<th>${b}</th>`);
+    rankingsHtml += '</tr></thead><tbody>';
+
+    // 각 방송사별로 약간 다른 순위 생성
+    let baseOrder = [...TEAM_NAMES].sort((a, b) => {
+        let teamA = gameState.leagueData.teams[a];
+        let teamB = gameState.leagueData.teams[b];
+        let scoreA = players.filter(p => p.team === a && p.tier === 1).reduce((s, p) => s + getPlayerOverallStat(p), 0);
+        let scoreB = players.filter(p => p.team === b && p.tier === 1).reduce((s, p) => s + getPlayerOverallStat(p), 0);
+        return scoreB - scoreA;
+    });
+
+    let broadcasterRankings = broadcasters.map(() => {
+        let shuffled = [...baseOrder];
+        // 약간의 랜덤 변동 (인접 팀끼리 스왑)
+        for (let i = 0; i < 3; i++) {
+            let idx = Math.floor(Math.random() * (shuffled.length - 1));
+            [shuffled[idx], shuffled[idx + 1]] = [shuffled[idx + 1], shuffled[idx]];
+        }
+        return shuffled;
+    });
+
+    for (let rank = 0; rank < 10; rank++) {
+        rankingsHtml += `<tr><td style="font-weight:bold;">${rank + 1}</td>`;
+        broadcasterRankings.forEach(br => {
+            let teamName = br[rank];
+            let style = teamName === gameState.userTeam ? 'color:var(--accent-green); font-weight:bold;' : '';
+            rankingsHtml += `<td style="${style}">${teamName}</td>`;
+        });
+        rankingsHtml += '</tr>';
+    }
+    rankingsHtml += '</tbody></table></div></div>';
+
+    // 2. 주목할 선수 30명 (팀별 투수 1~2명 + 타자 1~2명, 총 30명)
+    let notablePlayers = [];
+    TEAM_NAMES.forEach(team => {
+        let teamPlayers = players.filter(p => p.team === team && p.tier === 1);
+        let pitchers = teamPlayers.filter(p => p.isPitcher).sort((a, b) => getPlayerOverallStat(b) - getPlayerOverallStat(a));
+        let batters = teamPlayers.filter(p => !p.isPitcher).sort((a, b) => getPlayerOverallStat(b) - getPlayerOverallStat(a));
+        // 투수 2명 + 타자 1명 = 팀당 3명 * 10팀 = 30명
+        if (pitchers[0]) notablePlayers.push({ ...pitchers[0], role: '투수' });
+        if (pitchers[1]) notablePlayers.push({ ...pitchers[1], role: '투수' });
+        if (batters[0]) notablePlayers.push({ ...batters[0], role: '타자' });
+    });
+
+    let notableHtml = '<div style="margin-bottom:25px;"><h4 style="color:var(--accent-blue); margin:0 0 12px 0;">⭐ 올 시즌 주목할 선수 TOP 30</h4>';
+    notableHtml += '<div class="table-wrapper"><table style="min-width:500px;"><thead><tr><th>팀</th><th>이름(나이)</th><th>포지션</th><th>유형</th><th>현재등급</th><th>잠재력</th></tr></thead><tbody>';
+    notablePlayers.forEach(p => {
+        let grade = getGradeFromStat(getPlayerOverallStat(p));
+        let isMyTeam = p.team === gameState.userTeam;
+        let style = isMyTeam ? 'color:var(--accent-green);' : '';
+        notableHtml += `<tr><td style="${style}">${p.team}</td><td class="left">${p.name}(${p.age})</td><td>${p.pos}</td><td>${p.role}</td><td>${grade}</td><td class="fog-hidden">${isMyTeam ? p.hidden.gradePot : '???'}</td></tr>`;
+    });
+    notableHtml += '</tbody></table></div></div>';
+
+    // 3. 신인 유망주 TOP 10 (25세 이하, 2군)
+    let prospects = players.filter(p => p.age <= 23 && p.tier === 2)
+        .sort((a, b) => {
+            let potA = getGradeScore(a.hidden.gradePot);
+            let potB = getGradeScore(b.hidden.gradePot);
+            return potB - potA;
+        }).slice(0, 10);
+
+    let prospectHtml = '<div style="margin-bottom:25px;"><h4 style="color:var(--accent-blue); margin:0 0 12px 0;">🌟 신인 유망주 TOP 10 스카우팅 리포트</h4>';
+    if (prospects.length === 0) {
+        prospectHtml += '<p style="color:var(--text-muted);">해당하는 유망주가 없습니다.</p>';
+    } else {
+        prospectHtml += '<div class="table-wrapper"><table style="min-width:450px;"><thead><tr><th>#</th><th>팀</th><th>이름(나이)</th><th>포지션</th><th>현재등급</th><th>스카우팅</th></tr></thead><tbody>';
+        prospects.forEach((p, i) => {
+            let grade = getGradeFromStat(getPlayerOverallStat(p));
+            let scoutComment = p.hidden.gradePot === 'S' ? '프랜차이즈 스타 가능성' : p.hidden.gradePot === 'A' ? '주전급 성장 기대' : '역할 선수로 성장 가능';
+            let isMyTeam = p.team === gameState.userTeam;
+            let style = isMyTeam ? 'color:var(--accent-green);' : '';
+            prospectHtml += `<tr><td>${i + 1}</td><td style="${style}">${p.team}</td><td class="left">${p.name}(${p.age})</td><td>${p.isPitcher ? '투수' : '야수'} ${p.pos}</td><td>${grade}</td><td style="font-size:11px;">${scoutComment}</td></tr>`;
+        });
+        prospectHtml += '</tbody></table></div>';
+    }
+    prospectHtml += '</div>';
+
+    // 4. 구단별 전력 요약
+    let summaryHtml = '<div style="margin-bottom:25px;"><h4 style="color:var(--accent-blue); margin:0 0 12px 0;">📋 10개 구단 전력 분석 요약</h4>';
+    summaryHtml += '<div class="table-wrapper"><table style="min-width:500px;"><thead><tr><th>구단</th><th>투수력</th><th>타선</th><th>자금</th><th>1군 규모</th><th>전력 평가</th></tr></thead><tbody>';
+    TEAM_NAMES.forEach(team => {
+        let teamPlayers = players.filter(p => p.team === team && p.tier === 1);
+        let pitchers = teamPlayers.filter(p => p.isPitcher);
+        let batters = teamPlayers.filter(p => !p.isPitcher);
+        let pitchAvg = pitchers.length > 0 ? pitchers.reduce((s, p) => s + getPlayerOverallStat(p), 0) / pitchers.length : 0;
+        let batAvg = batters.length > 0 ? batters.reduce((s, p) => s + getPlayerOverallStat(p), 0) / batters.length : 0;
+        let teamData = gameState.leagueData.teams[team];
+        let overall = (pitchAvg + batAvg) / 2;
+        let evalText = overall >= 70 ? '우승 후보' : overall >= 60 ? '포스트시즌 경쟁' : overall >= 50 ? '중위권' : '재건 중';
+        let isMyTeam = team === gameState.userTeam;
+        let style = isMyTeam ? 'color:var(--accent-green);' : '';
+        summaryHtml += `<tr><td style="${style}font-weight:bold;">${team}</td><td>${getGradeFromStat(pitchAvg)}</td><td>${getGradeFromStat(batAvg)}</td><td class="right">${teamData.cash.toFixed(1)}억</td><td>${teamPlayers.length}명</td><td style="font-size:11px;">${evalText}</td></tr>`;
+    });
+    summaryHtml += '</tbody></table></div></div>';
+
+    container.innerHTML = rankingsHtml + summaryHtml + notableHtml + prospectHtml;
+}
+
 function showEventModal(eventConfig) {
     let buttonHtml = `<button class="btn primary" onclick="resolvePendingEvent()">일정 확인 및 완료</button>`;
     
@@ -631,37 +742,81 @@ function releasePlayer(pid) {
     }
 }
 
-function executeTraining() {
-    let currentMonth = new Date(gameState.currentDate).getMonth();
-    // 비시즌 (11, 12, 1월) 
-    if (currentMonth !== 10 && currentMonth !== 11 && currentMonth !== 0) {
-        return alert("특별 훈련은 비시즌(11월~1월)에만 진행할 수 있습니다.");
+const SPRING_CAMP_LOCATIONS = [
+    { name: '국내 (인천/부산)', cost: 0.3, successRate: 20, boostAmount: 2, failRate: 10, desc: '가장 경제적인 선택. 기본적인 훈련 환경.' },
+    { name: '오키나와', cost: 2.0, successRate: 35, boostAmount: 3, failRate: 12, desc: '따뜻한 기후와 일본식 체계적 훈련.' },
+    { name: '괌', cost: 3.5, successRate: 40, boostAmount: 4, failRate: 10, desc: '최적의 기후 조건. 집중 훈련 가능.' },
+    { name: '애리조나', cost: 5.0, successRate: 50, boostAmount: 5, failRate: 8, desc: 'MLB급 시설. 최고 수준의 훈련 환경.' },
+    { name: '호주', cost: 8.0, successRate: 60, boostAmount: 7, failRate: 5, desc: '세계 최고 시설과 해외 실전 매치. 프리미엄 캠프.' }
+];
+
+function executeSpringCamp(locationIndex) {
+    if (!gameState.pendingEvent || gameState.pendingEvent.id !== 'spring_camp') {
+        return alert("현재 스프링캠프 진행 기간이 아닙니다.");
     }
+
+    const location = SPRING_CAMP_LOCATIONS[locationIndex];
+    if (!location) return alert("잘못된 장소입니다.");
 
     const team = gameState.leagueData.teams[gameState.userTeam];
-    if(team.cash < 0.5) return alert("현금이 부족합니다. (필요: 0.5억)");
-    let select = document.getElementById('train-player-select');
-    if(!select.value) return alert("선수를 선택하세요.");
-    
-    let p = gameState.leagueData.players.find(x => x.id === select.value);
-    if (p.trainedThisYear) return alert("이번 오프시즌에 이미 특별 훈련을 받았습니다. (연 1회 제한)");
+    if (team.cash < location.cost) return alert(`현금이 부족합니다. (필요: ${location.cost}억, 보유: ${team.cash.toFixed(1)}억)`);
 
-    team.cash -= 0.5;
-    p.trainedThisYear = true;
-    
-    let roll = Math.random() * 100;
-    let suc = (p.hidden.gradePot === 'S' || p.hidden.gradePot === 'A') ? 50 : 30;
-    
-    if(roll < suc) {
-        if(p.isPitcher) p.stats.stf += 5; else p.stats.pow += 5;
-        alert(`[대성공] ${p.name} 선수의 기량이 발전했습니다!`); addTransactionLog(`[훈련 성공] ${p.name} 기량 스텝업.`);
-    } else if (roll < suc + 30) {
-        if(p.isPitcher) p.stats.ctl -= 5; else p.stats.con -= 5;
-        alert(`[부작용] 무리한 폼 교정으로 ${p.name}의 밸런스 붕괴.`); addTransactionLog(`[부작용] ${p.name} 스탯 하락.`);
-    } else {
-        alert(`[훈련 실패] 소득 없이 종료. (0.5억 증발)`); addTransactionLog(`[훈련 실패] ${p.name} 적응 실패.`);
+    team.cash -= location.cost;
+
+    let myPlayers = gameState.leagueData.players.filter(p => p.team === gameState.userTeam && p.tier !== 'RELEASED');
+    let boostedCount = 0;
+    let failedCount = 0;
+    let resultMessages = [];
+
+    myPlayers.forEach(p => {
+        let roll = Math.random() * 100;
+
+        if (roll < location.successRate) {
+            // 성공: 스탯 부스트
+            let boost = Math.floor(Math.random() * location.boostAmount) + 1;
+            if (p.isPitcher) {
+                let targets = ['stf', 'ctl', 'sta'];
+                let target = targets[Math.floor(Math.random() * targets.length)];
+                p.stats[target] = Math.min(99, p.stats[target] + boost);
+            } else {
+                let targets = ['con', 'pow', 'eye', 'def'];
+                let target = targets[Math.floor(Math.random() * targets.length)];
+                p.stats[target] = Math.min(99, p.stats[target] + boost);
+            }
+            boostedCount++;
+            if (boost >= location.boostAmount - 1) {
+                resultMessages.push(`⬆️ ${p.name}: 눈에 띄는 성장! (+${boost})`);
+            }
+        } else if (roll > 100 - location.failRate) {
+            // 실패: 코칭 사고로 스탯 하락
+            if (p.isPitcher) {
+                let targets = ['stf', 'ctl', 'sta'];
+                let target = targets[Math.floor(Math.random() * targets.length)];
+                p.stats[target] = Math.max(1, p.stats[target] - 3);
+            } else {
+                let targets = ['con', 'pow', 'eye', 'def'];
+                let target = targets[Math.floor(Math.random() * targets.length)];
+                p.stats[target] = Math.max(1, p.stats[target] - 3);
+            }
+            failedCount++;
+            resultMessages.push(`⬇️ ${p.name}: 훈련 중 부상/컨디션 저하`);
+        }
+    });
+
+    let summaryMsg = `[스프링캠프 완료] ${location.name}\n`;
+    summaryMsg += `비용: ${location.cost}억 원\n`;
+    summaryMsg += `참가 선수: ${myPlayers.length}명\n`;
+    summaryMsg += `───────────────────\n`;
+    summaryMsg += `성장 선수: ${boostedCount}명\n`;
+    summaryMsg += `부상/하락: ${failedCount}명\n`;
+    if (resultMessages.length > 0) {
+        summaryMsg += `───────────────────\n`;
+        summaryMsg += `[주요 변동]\n` + resultMessages.join('\n');
     }
-    updateUI(); saveGame();
+
+    alert(summaryMsg);
+    addTransactionLog(`[스프링캠프] ${location.name}에서 캠프 완료. (${boostedCount}명 성장 / ${failedCount}명 하락)`);
+    resolvePendingEvent();
 }
 
 function checkLuxuryTax() {
@@ -1067,4 +1222,49 @@ function updateUI() {
 
     const inbox = document.getElementById('dash-inbox');
     if(inbox) inbox.innerHTML = gameState.transactionLog.join('<br>');
+
+    // 시장 리스트 갱신 (용병/FA)
+    renderMarketList();
+
+    // 시즌 프리뷰 콘텐츠 갱신
+    generateSeasonPreview();
+
+    // 스프링캠프 UI 갱신
+    renderSpringCampUI();
+}
+
+function renderSpringCampUI() {
+    const container = document.getElementById('spring-camp-cards');
+    if (!container) return;
+
+    const isActive = gameState.pendingEvent && gameState.pendingEvent.id === 'spring_camp';
+    const team = gameState.leagueData.teams[gameState.userTeam];
+
+    let html = '';
+    SPRING_CAMP_LOCATIONS.forEach((loc, idx) => {
+        let canAfford = team && team.cash >= loc.cost;
+        let disabledStyle = (!isActive || !canAfford) ? 'opacity:0.5; pointer-events:none;' : '';
+        let costColor = canAfford ? 'var(--accent-green)' : 'var(--accent-red)';
+
+        html += `
+        <div style="background:var(--surface-light); border:1px solid var(--border-color); border-radius:8px; padding:15px; margin-bottom:10px; ${disabledStyle}">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <strong style="color:#fff; font-size:15px;">${loc.name}</strong>
+                <span style="color:${costColor}; font-weight:bold; font-family:var(--font-mono);">${loc.cost}억</span>
+            </div>
+            <p style="font-size:12px; color:var(--text-muted); margin:0 0 10px 0;">${loc.desc}</p>
+            <div style="display:flex; gap:15px; font-size:11px; color:var(--text-muted); margin-bottom:12px;">
+                <span>성장확률: <strong style="color:var(--accent-green);">${loc.successRate}%</strong></span>
+                <span>최대부스트: <strong style="color:var(--accent-blue);">+${loc.boostAmount}</strong></span>
+                <span>사고위험: <strong style="color:var(--accent-red);">${loc.failRate}%</strong></span>
+            </div>
+            <button class="btn primary" style="margin:0; padding:10px;" onclick="executeSpringCamp(${idx})">이 장소에서 캠프 진행</button>
+        </div>`;
+    });
+
+    if (!isActive) {
+        container.innerHTML = '<div style="text-align:center; padding:30px; color:var(--text-muted);">현재 스프링캠프 진행 기간이 아닙니다.<br><span style="font-size:12px;">매년 2월 3주차에 스프링캠프가 시작됩니다.</span></div>';
+    } else {
+        container.innerHTML = html;
+    }
 }
