@@ -1,4 +1,4 @@
-[{"team": "KT", "type": "Pitcher", "position": "Starter", "tier": 1, "name": "고영표", "age": 35, "stats": "3.30 ERA, 29 G, 11 W, 8 L, 161.0 IP, 30 BB, 154 SO, 1.24 WHIP", "note": "FA in '28"},
+﻿const EMBEDDED_ROSTER_DATA = [{"team": "KT", "type": "Pitcher", "position": "Starter", "tier": 1, "name": "고영표", "age": 35, "stats": "3.30 ERA, 29 G, 11 W, 8 L, 161.0 IP, 30 BB, 154 SO, 1.24 WHIP", "note": "FA in '28"},
   {"team": "KT", "type": "Pitcher", "position": "Starter", "tier": 1, "name": "소형준", "age": 25, "stats": "3.30 ERA, 26 G, 10 W, 7 L, 1 SV, 147.1 IP, 29 BB, 123 SO, 1.25 WHIP", "note": null},
   {"team": "KT", "type": "Pitcher", "position": "Starter", "tier": 1, "name": "오원석", "age": 25, "stats": "3.67 ERA, 25 G, 11 W, 8 L, 132.1 IP, 52 BB, 113 SO, 1.38 WHIP", "note": null},
   {"team": "KT", "type": "Pitcher", "position": "Starter", "tier": 1, "name": "배제성", "age": 30, "stats": "5.67 ERA, 8 G, 2 W, 3 L, 27.0 IP, 11 BB, 23 SO, 1.81 WHIP", "note": null},
@@ -419,4 +419,4 @@
   {"team": "KIA", "type": "Batter", "position": "2nd Team", "tier": 2, "name": "주효상", "age": 29, "stats": null, "note": null},
   {"team": "KIA", "type": "Batter", "position": "2nd Team", "tier": 2, "name": "박재현", "age": 20, "stats": null, "note": null},
   {"team": "KIA", "type": "Batter", "position": "2nd Team", "tier": 2, "name": "황대인", "age": 30, "stats": null, "note": null}
-]
+];
